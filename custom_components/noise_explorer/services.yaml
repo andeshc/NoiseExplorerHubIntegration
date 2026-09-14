@@ -1,0 +1,205 @@
+{
+  "refresh": {
+    "name": "Refresh cloud data",
+    "description": "Refresh cached cloud values for the account.",
+    "fields": {
+      "device_id": {
+        "name": "Watch",
+        "required": true,
+        "selector": {
+          "device": {
+            "integration": "noise_explorer"
+          }
+        }
+      }
+    }
+  },
+  "locate": {
+    "name": "Request location",
+    "description": "Send this command to the selected watch. A cloud acknowledgement does not guarantee physical execution; the watch may be offline.",
+    "fields": {
+      "device_id": {
+        "name": "Watch",
+        "required": true,
+        "selector": {
+          "device": {
+            "integration": "noise_explorer"
+          }
+        }
+      }
+    }
+  },
+  "find_watch": {
+    "name": "Find watch",
+    "description": "Send this command to the selected watch. A cloud acknowledgement does not guarantee physical execution; the watch may be offline.",
+    "fields": {
+      "device_id": {
+        "name": "Watch",
+        "required": true,
+        "selector": {
+          "device": {
+            "integration": "noise_explorer"
+          }
+        }
+      }
+    }
+  },
+  "request_steps": {
+    "name": "Request step update",
+    "description": "Send this command to the selected watch. A cloud acknowledgement does not guarantee physical execution; the watch may be offline.",
+    "fields": {
+      "device_id": {
+        "name": "Watch",
+        "required": true,
+        "selector": {
+          "device": {
+            "integration": "noise_explorer"
+          }
+        }
+      }
+    }
+  },
+  "request_signal": {
+    "name": "Request signal update",
+    "description": "Send this command to the selected watch. A cloud acknowledgement does not guarantee physical execution; the watch may be offline.",
+    "fields": {
+      "device_id": {
+        "name": "Watch",
+        "required": true,
+        "selector": {
+          "device": {
+            "integration": "noise_explorer"
+          }
+        }
+      }
+    }
+  },
+  "request_version": {
+    "name": "Request firmware version",
+    "description": "Send this command to the selected watch. A cloud acknowledgement does not guarantee physical execution; the watch may be offline.",
+    "fields": {
+      "device_id": {
+        "name": "Watch",
+        "required": true,
+        "selector": {
+          "device": {
+            "integration": "noise_explorer"
+          }
+        }
+      }
+    }
+  },
+  "set_setting": {
+    "name": "Set watch setting",
+    "description": "Set a supported setting using its documented wire value; see README. Prefer switch/select/number entities for normal use.",
+    "fields": {
+      "device_id": {
+        "name": "Watch",
+        "required": true,
+        "selector": {
+          "device": {
+            "integration": "noise_explorer"
+          }
+        }
+      },
+      "key": {
+        "name": "Setting",
+        "required": true,
+        "selector": {
+          "select": {
+            "options": [
+              "setps_setting",
+              "setps_notification",
+              "white_list_on",
+              "CloudPhotos",
+              "fcm_onoff",
+              "report_fault_onoff",
+              "keep_wifi_connect",
+              "auto_connect_wifi",
+              "fota_wifi_only",
+              "operation_mode_value",
+              "volume_level",
+              "led_level",
+              "volumevibrate",
+              "auto_answer",
+              "steps_target_level"
+            ]
+          }
+        }
+      },
+      "value": {
+        "name": "Value",
+        "required": true,
+        "selector": {
+          "text": {}
+        }
+      }
+    }
+  },
+  "get_settings": {
+    "name": "Read watch settings",
+    "description": "Return supported settings, including alarm IDs and schedules. This response may contain personal schedule information.",
+    "fields": {
+      "device_id": {
+        "name": "Watch",
+        "required": true,
+        "selector": {
+          "device": {
+            "integration": "noise_explorer"
+          }
+        }
+      }
+    }
+  },
+  "set_alarms": {
+    "name": "Replace watch alarms",
+    "description": "Replace the complete alarm list, up to 10 alarms. An empty list deletes all alarms. Read the existing list first and preserve IDs when editing.",
+    "fields": {
+      "device_id": {
+        "name": "Watch",
+        "required": true,
+        "selector": {
+          "device": {
+            "integration": "noise_explorer"
+          }
+        }
+      },
+      "alarms": {
+        "name": "Alarm list",
+        "required": true,
+        "selector": {
+          "object": {}
+        }
+      }
+    }
+  },
+  "set_alarm_enabled": {
+    "name": "Enable or disable an alarm",
+    "description": "Change one existing alarm, preserving the others. Obtain its ID using Read watch settings.",
+    "fields": {
+      "device_id": {
+        "name": "Watch",
+        "required": true,
+        "selector": {
+          "device": {
+            "integration": "noise_explorer"
+          }
+        }
+      },
+      "alarm_id": {
+        "name": "Alarm ID",
+        "required": true,
+        "selector": {
+          "text": {}
+        }
+      },
+      "enabled": {
+        "name": "Enabled",
+        "required": true,
+        "selector": {
+          "boolean": {}
+        }
+      }
+    }
+  }
+}

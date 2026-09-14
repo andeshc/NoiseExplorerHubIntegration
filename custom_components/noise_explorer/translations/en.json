@@ -1,0 +1,37 @@
+{
+  "title": "Noise Explorer",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Noise Explorer Hub",
+        "description": "Sign in with the email and password used in Noise Explorer Hub. Pair the watch in the app first. This uses Noise's cloud service. The service may replace an existing app session.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Sign-in was rejected. Check your credentials and account status.",
+      "cannot_connect": "Cannot connect to Noise cloud. Check connectivity and try again."
+    },
+    "abort": {
+      "already_configured": "This Noise account is already configured.",
+      "no_watches": "No paired watches found. Pair your watch in Noise Explorer Hub first.",
+      "reauth_successful": "Sign-in updated successfully.",
+      "wrong_account": "Sign in with the same Noise account as this integration."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Noise Explorer updates",
+        "description": "Cloud reads do not force a GPS fix. Automatic location requests wake the watch and use battery. Use 0 to disable them, or at least 300 seconds. The Request location button works at any time.",
+        "data": {
+          "poll_interval": "Cloud refresh interval (seconds)",
+          "location_interval": "Automatic location request interval (seconds, 0 disables)"
+        }
+      }
+    }
+  }
+}

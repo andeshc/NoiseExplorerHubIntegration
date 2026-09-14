@@ -1,0 +1,11 @@
+{
+  "domain": "noise_explorer",
+  "name": "Noise Explorer",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://developers.home-assistant.io/docs/creating_integration_file_structure/",
+  "integration_type": "hub",
+  "iot_class": "cloud_push",
+  "requirements": [],
+  "version": "0.1.0"
+}
