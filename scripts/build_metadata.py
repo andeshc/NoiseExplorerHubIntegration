@@ -20,7 +20,13 @@ strings = {
             }
         },
         "error": {
-            "invalid_auth": "Sign-in was rejected. Check your credentials and account status.",
+            "invalid_auth": "Sign-in was rejected (server code {error_code}). Check your account status in Noise Explorer Hub.",
+            "wrong_password": "Noise rejected the password (code -101). Use your Noise Explorer Hub password.",
+            "unknown_email": "Noise did not recognize this email account (code -103). Use the email registered in Noise Explorer Hub.",
+            "login_throttled": "Too many sign-in attempts (code -123). Wait before trying again.",
+            "account_locked": "Noise reports the account is locked after password errors (code -127). Check sign-in in Noise Explorer Hub.",
+            "invalid_session": "Noise rejected the session (code -14). Update the integration and try again; this does not necessarily mean the password is wrong.",
+            "server_redirect": "Noise requested another account server (code -400). This integration does not yet follow server redirects.",
             "cannot_connect": "Cannot connect to Noise cloud. Check connectivity and try again.",
         },
         "abort": {

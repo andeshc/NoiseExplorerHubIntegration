@@ -16,6 +16,27 @@ from custom_components.noise_explorer.diagnostics import async_get_config_entry_
 from custom_components.noise_explorer.services import validate_setting
 
 
+@pytest.mark.parametrize(
+    ("rc", "expected"),
+    [(-101, "wrong_password"), (-103, "unknown_email"), (-123, "login_throttled"),
+     (-127, "account_locked"), (-14, "invalid_session"), (-400, "server_redirect"),
+     (-999, "invalid_auth")],
+)
+async def test_login_form_explains_server_error(coordinator, monkeypatch, rc, expected):
+    from custom_components.noise_explorer import config_flow
+
+    client = AsyncMock()
+    client.connect.side_effect = AuthenticationError("Sign-in rejected", rc=rc)
+    monkeypatch.setattr(config_flow, "NoiseClient", lambda *args, **kwargs: client)
+    monkeypatch.setattr(config_flow, "async_get_clientsession", lambda hass: None)
+    flow = config_flow.NoiseConfigFlow()
+    flow.hass = coordinator.hass
+    result = await flow.async_step_user({"email": "test@example.test", "password": "test"})
+    assert result["errors"] == {"base": expected}
+    assert result["description_placeholders"] == {"error_code": str(rc)}
+    client.close.assert_awaited_once()
+
+
 @pytest.fixture
 async def coordinator(tmp_path):
     hass = HomeAssistant(str(tmp_path))
@@ -106,6 +127,17 @@ async def test_readback_overrides_requested_setting(coordinator):
     await coordinator.async_set_setting("watch1", "volume_level", "2")
     coordinator.client.set_setting.assert_awaited_once_with("watch1", "group1", "volume_level", "2")
     assert coordinator.watches["watch1"].settings["volume_level"] == "4"
+
+
+async def test_firmware_response_updates_sensor(coordinator):
+    coordinator.client.command.return_value = {
+        "CID": 30012, "RC": 1,
+        "PL": {"sub_action": 504, "watch_version": "synthetic-v2"},
+    }
+    await coordinator.async_command("watch1", 504)
+    entities = await all_entities(coordinator)
+    firmware = next(entity for entity in entities if entity.key == "VersionCur")
+    assert firmware.native_value == "synthetic-v2"
 
 
 async def test_removed_watch_entities_become_unavailable(coordinator):

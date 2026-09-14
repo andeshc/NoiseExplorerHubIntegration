@@ -60,7 +60,7 @@ Unqualified `NetService.java` and `CloudBridgeUtil` above refer to `com/xiaoxun/
 
 The default Noise region endpoint is **`wss://noise-cmibro.xunkids.com:8555/svc/pipe`**. The generic `m.java` Singapore default is overridden by `AppRegionModel`; using it for Noise India would be a mistake. Other services in the same region config are under `https://india-api.xunkids.com/` (`noise`, `fileServer`, `stepserver`, `hsdataserver`, `xun-cloudalbum`, etc.). They are not needed by this integration.
 
-Requests carry uppercase envelope fields: `CID`, `SN`, optional `SID`, and `PL`.
+Requests carry uppercase envelope fields: `CID`, `SN`, `Version="00140000"`, optional `SID`, and `PL`. `NetService.sendNetMsg` inserts the version before encryption. A live login without it returned RC -14; adding it returned RC 1 with the same credentials.
 
 1. Generate a fresh 16-byte ASCII session key.
 2. Build CID **10011** with `Name=MD5(email).upper()`, `Uuid=MD5(email).upper()`, `Password=MD5(password).upper()`, `loginType=0`, `Type=102`, `countryCode=HI`, `region=global`, `domainCheck=1`, `timezone=UTC±HH:MM`, `ads`, empty `ect`/`ectr`.
@@ -68,7 +68,7 @@ Requests carry uppercase envelope fields: `CID`, `SN`, optional `SID`, and `PL`.
 4. Read response CID **10012**; a successful login has root `RC=1`, root `SID`, and `PL.EID`.
 5. Send subsequent envelopes as binary AES-CBC frames. The app also accepts JSON or base64 text responses. Session keys/SIDs remain memory-only in this implementation.
 
-`ads` follows the app's device string structure, with a persistent random installation ID and a HomeAssistant brand suffix. Acceptance of this suffix remains to be confirmed live.
+`ads` follows the app's device string structure, with a persistent random installation ID and a HomeAssistant brand suffix. Live login accepted this suffix on 2026-09-14.
 
 | Request | Response | Payload / routing |
 |---|---|---|
@@ -76,9 +76,11 @@ Requests carry uppercase envelope fields: `CID`, `SN`, optional `SID`, and `PL`.
 | 60051 | 60052 | `PL={EID, Keys:[...]}`; response PL directly maps setting names to values |
 | 60071 | 60072 | `PL={EID}`; response `PL.offline`, 1 means offline |
 | 60031 | 60032 | `PL={setting:value, TEID:watch_eid, TGID:family_gid, settype:"true", SMS:"<SN,user_eid,E501>"}` |
-| 30011 | 30012 | Root `TEID=[watch_eid]`; `PL={sub_action:code,...}` |
+| 30011 | 30012; 50112/50122 for location | Root `TEID=[watch_eid]`; `PL={sub_action:code,...}`. Location notifications may complete the request when their SN matches. |
 | — | 50112 / 50122 | New/track location notifications with `PL.EID` and `PL.result` |
 | — | 79002 | Session kicked; stop automatic authentication attempts |
+
+The app includes `PL.SMS="<SN,account_eid,Eaction,argument>"` for find-watch and telemetry requests (DevOptActivity.requestSteps, SystemUpdateActivity.requestWatchVersion, WatchManagerActivity.deviceFindWatch). Find-watch uses argument `1`; telemetry requests leave it empty. The integration includes these fields.
 
 Recovered button actions: 100 locate, 158 find (Key `"1"`), 502 step update, 503 signal update, 504 version update. The app may return a cloud acknowledgement separately from the watch result. A non-negative acknowledgement is not a guarantee of physical completion. Negative return codes are surfaced. A timeout does not trigger an automatic write retry.
 
@@ -92,7 +94,9 @@ Incoming `sub_action=501` reports contain fields such as `battery_level`, `cur_s
 
 **Live endpoint check:** on 2026-09-14, the Noise host on port 8555 completed a TLS 1.2 handshake with normal certificate and hostname verification. No account login or watch request was sent for this check. The app's WebSocket library has a trust-all default; this integration deliberately retains normal TLS verification, which passed for the tested endpoint.
 
-**Not verified on hardware:** credentials accepted by the live service, physical command outcomes, supported Junior 2 feature subset, all firmware response variants, session coexistence, and local timestamp interpretation for the actual account. No account credentials were supplied or used.
+**Live account validation:** email/password login, one paired-watch discovery, cached settings and offline-status reads succeeded on 2026-09-14. The live settings instantiated 44 HA entities. Firmware returned `PL.watch_version`; location arrived as CID 50112 with a matching SN and a valid fix. The owner confirmed Find watch rang, but it did not return an acknowledgement within 35 seconds. Step and signal refreshes did not return a reply in the same test window. Credentials and personal payloads were excluded from logs, tests and version control.
+
+**Not verified on hardware:** setting and alarm writes, remaining Junior 2 features and firmware response variants, session coexistence, and local timestamp interpretation for the actual account.
 
 The integration does not attempt account creation, rebinding, device takeover, certificate bypass, raw command injection, firmware changes, or automatic writes during setup. The lack of a feature means its protocol or model support has not been sufficiently established for this implementation.
 

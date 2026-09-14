@@ -18,6 +18,10 @@ class NoiseError(Exception):
 class AuthenticationError(NoiseError):
     """Session expired, credentials rejected, or another session replaced this one."""
 
+    def __init__(self, message: str, rc: int | None = None):
+        self.rc = rc
+        super().__init__(message)
+
 
 class ConnectionError(NoiseError):
     """Transport unavailable or response timed out."""
@@ -54,6 +58,7 @@ class NoiseClient:
         self.ws = None
         self._reader = None
         self._pending: dict[int, tuple[int, asyncio.Future]] = {}
+        self._location_requests: set[int] = set()
         self._connect_lock = asyncio.Lock()
         self._write_lock = asyncio.Lock()
         self._sn = secrets.randbelow(1_000_000_000)
@@ -84,9 +89,8 @@ class NoiseClient:
                     login_payload(self.email, self.password, self.client_id, self.timezone),
                     handshake=True,
                 )
-                if response.get("RC") != 1 or not response.get("SID"):
-                    self.auth_blocked = True
-                    raise AuthenticationError("Login rejected")
+                if not response.get("SID"):
+                    raise ConnectionError("Login response missing session identifier")
                 pl = response.get("PL")
                 if not isinstance(pl, dict) or not pl.get("EID"):
                     raise ConnectionError("Login response missing account identifier")
@@ -125,7 +129,9 @@ class NoiseClient:
             raise ConnectionError("Cloud connection unavailable")
         self._sn = (self._sn + 1) % 2_147_483_647
         sn = self._sn
-        message = {"CID": cid, "SN": sn}
+        # NetService.sendNetMsg adds this to every app request. Omitting it
+        # makes the live server reject even a new login with RC -14.
+        message = {"CID": cid, "SN": sn, "Version": "00140000"}
         if self.sid:
             message["SID"] = self.sid
         if payload is not None:
@@ -134,6 +140,8 @@ class NoiseClient:
             message.update(top)
         future = asyncio.get_running_loop().create_future()
         self._pending[sn] = (cid, future)
+        if cid == 30011 and isinstance(payload, dict) and payload.get("sub_action") == 100:
+            self._location_requests.add(sn)
         try:
             async with asyncio.timeout(response_timeout):
                 async with self._write_lock:
@@ -148,6 +156,7 @@ class NoiseClient:
             raise ConnectionError("Cloud transport failed") from err
         finally:
             self._pending.pop(sn, None)
+            self._location_requests.discard(sn)
             if not future.done():
                 future.cancel()
             elif not future.cancelled():
@@ -163,9 +172,14 @@ class NoiseClient:
                 cid, sn, rc = message.get("CID"), message.get("SN"), message.get("RC")
                 if cid == 79002 or rc == -14:
                     self.auth_blocked = True
-                    raise AuthenticationError("Cloud session replaced or expired; sign in again")
+                    raise AuthenticationError(
+                        "Cloud session replaced or invalid; sign in again", rc=rc
+                    )
                 pending = self._pending.get(sn)
-                matched = pending is not None and cid == pending[0] + 1
+                matched = pending is not None and (
+                    cid == pending[0] + 1
+                    or (sn in self._location_requests and cid in (50112, 50122))
+                )
                 if matched:
                     request_cid, future = pending
                     if not future.done():
@@ -174,9 +188,13 @@ class NoiseClient:
                                 future.set_exception(
                                     ConnectionError("Login service temporarily unavailable")
                                 )
-                            else:
+                            elif isinstance(rc, int) and rc < 0:
                                 self.auth_blocked = True
-                                future.set_exception(AuthenticationError("Login rejected"))
+                                future.set_exception(
+                                    AuthenticationError(f"Login rejected (code {rc})", rc=rc)
+                                )
+                            else:
+                                future.set_exception(ConnectionError("Invalid login response status"))
                         elif isinstance(rc, int) and rc < 0:
                             future.set_exception(CommandError(request_cid, rc))
                         elif (
@@ -251,6 +269,11 @@ class NoiseClient:
         )
 
     async def command(self, eid: str, action: int, data: dict | None = None) -> dict:
+        payload = {**(data or {}), "sub_action": action}
+        if action in (158, 502, 503, 504):
+            sn = (self._sn + 1) % 2_147_483_647
+            argument = str(payload.get("Key", "1")) if action == 158 else ""
+            payload["SMS"] = f"<{sn},{self.eid},E{action},{argument}>"
         return await self.request(
-            30011, {**(data or {}), "sub_action": action}, top={"TEID": [eid]}, response_timeout=120
+            30011, payload, top={"TEID": [eid]}, response_timeout=120
         )

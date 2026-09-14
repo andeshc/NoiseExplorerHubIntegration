@@ -20,6 +20,7 @@ class NoiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input=None):
         errors = {}
+        placeholders = {}
         if user_input is not None:
             offset = int(
                 datetime.now(ZoneInfo(self.hass.config.time_zone)).utcoffset().total_seconds() / 60
@@ -47,8 +48,16 @@ class NoiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 if not watches:
                     return self.async_abort(reason="no_watches")
                 return self.async_create_entry(title="Noise Explorer", data=data)
-            except AuthenticationError:
-                errors["base"] = "invalid_auth"
+            except AuthenticationError as err:
+                errors["base"] = {
+                    -101: "wrong_password",
+                    -103: "unknown_email",
+                    -123: "login_throttled",
+                    -127: "account_locked",
+                    -14: "invalid_session",
+                    -400: "server_redirect",
+                }.get(err.rc, "invalid_auth")
+                placeholders["error_code"] = str(err.rc) if err.rc is not None else "unknown"
             except (NoiseError, aiohttp.ClientError, TimeoutError):
                 errors["base"] = "cannot_connect"
             finally:
@@ -63,7 +72,10 @@ class NoiseConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ),
             }
         )
-        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+        return self.async_show_form(
+            step_id="user", data_schema=schema, errors=errors,
+            description_placeholders=placeholders,
+        )
 
     async def async_step_reauth(self, entry_data):
         return await self.async_step_user()

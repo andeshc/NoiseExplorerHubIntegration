@@ -1,10 +1,12 @@
 """Package only original integration code, metadata and documentation."""
 
+import json
 import zipfile
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
-output = root / "dist" / "noise_explorer-0.1.0.zip"
+manifest = json.loads((root / "custom_components/noise_explorer/manifest.json").read_text())
+output = root / "dist" / f"noise_explorer-{manifest['version']}.zip"
 output.parent.mkdir(exist_ok=True)
 files = [root / "README.md", *sorted((root / "docs").glob("*.md"))]
 files += [

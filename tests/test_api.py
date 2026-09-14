@@ -38,6 +38,8 @@ class Server:
             response = {"CID": cid + 1, "SN": message["SN"], "RC": self.reply_rc, "PL": {}}
             if cid == 10011:
                 response.update(RC=self.login_rc, SID="synthetic-session", PL={"EID": "account1"})
+                if message.get("Version") != "00140000":
+                    response.update(RC=-14)
             elif cid == 20091:
                 response["PL"] = [
                     {
@@ -99,14 +101,19 @@ async def test_full_login_discovery_poll_and_write(connection):
     assert sent["SID"] == "synthetic-session"
     await client.command("watch1", 158, {"Key": "1"})
     assert server.messages[-1]["TEID"] == ["watch1"]
-    assert server.messages[-1]["PL"] == {"sub_action": 158, "Key": "1"}
+    sent = server.messages[-1]
+    assert sent["PL"] == {
+        "sub_action": 158, "Key": "1", "SMS": f"<{sent['SN']},account1,E158,1>"
+    }
+    assert all(message["Version"] == "00140000" for message in server.messages)
 
 
 async def test_rejected_login_does_not_reconnect_loop(connection):
     client, server = connection
     server.login_rc = -127
-    with pytest.raises(AuthenticationError):
+    with pytest.raises(AuthenticationError) as caught:
         await client.connect()
+    assert caught.value.rc == -127
     assert not client.connected
     with pytest.raises(AuthenticationError):
         await client.connect()
@@ -121,6 +128,36 @@ async def test_transient_login_can_retry(connection):
     server.login_rc = 1
     await client.connect()
     assert client.connected
+
+
+@pytest.mark.parametrize("rc", [-101, -103, -123, -127, -400, -14])
+async def test_login_error_preserves_safe_server_code(connection, rc):
+    client, server = connection
+    server.login_rc = rc
+    with pytest.raises(AuthenticationError) as caught:
+        await client.connect()
+    assert caught.value.rc == rc
+    assert not client.connected
+
+
+@pytest.mark.parametrize("action", [502, 503, 504])
+async def test_telemetry_request_includes_app_sms_envelope(connection, action):
+    client, server = connection
+    await client.connect()
+    await client.command("watch1", action)
+    sent = server.messages[-1]
+    assert sent["PL"] == {
+        "sub_action": action, "SMS": f"<{sent['SN']},account1,E{action},>"
+    }
+
+
+@pytest.mark.parametrize("rc", [None, "unexpected", 0])
+async def test_malformed_login_does_not_blame_credentials(connection, rc):
+    client, server = connection
+    server.login_rc = rc
+    with pytest.raises(ConnectionError):
+        await client.connect()
+    assert not client.auth_blocked
 
 
 async def test_timeout_cleanup_and_no_write_retry(connection):
@@ -164,6 +201,25 @@ async def test_unsolicited_push_cannot_satisfy_wrong_cid(connection):
         client.codec.encrypt({"CID": 60052, "SN": sn, "RC": 1, "PL": {"battery_level": "0"}})
     )
     assert (await request)["battery_level"] == "0"
+
+
+@pytest.mark.parametrize("cid", [50112, 50122])
+async def test_location_notification_completes_matching_request(connection, cid):
+    client, server = connection
+    await client.connect()
+    server.drop_cid = 30011
+    request = asyncio.create_task(client.command("watch1", 100))
+    for _ in range(100):
+        if server.messages[-1]["CID"] == 30011:
+            break
+        await asyncio.sleep(0)
+    sn = server.messages[-1]["SN"]
+    await server.ws.send_bytes(client.codec.encrypt({
+        "CID": cid, "SN": sn, "RC": 1,
+        "PL": {"EID": "watch1", "result": {"type": "1", "location": "72,19"}},
+    }))
+    assert (await asyncio.wait_for(request, 1))["CID"] == cid
+    assert not client._location_requests
 
 
 async def test_session_kick_fails_pending_and_blocks_reconnect(connection):

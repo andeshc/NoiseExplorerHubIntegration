@@ -142,6 +142,8 @@ class Watch:
         if not isinstance(payload, dict):
             return False
         cid, action = message.get("CID"), payload.get("sub_action")
+        if action == 504 and isinstance(payload.get("watch_version"), str):
+            self.info["VersionCur"] = payload["watch_version"]
         if cid in (50112, 50122) or action == 100:
             self.merge_location(payload)
         if action == 501:

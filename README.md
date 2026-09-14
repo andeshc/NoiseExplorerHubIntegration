@@ -2,13 +2,13 @@
 
 An **experimental custom integration for the Noise Explorer Junior 2**, reverse engineered from the supplied Noise Explorer Hub Android app. It signs in with your existing **email/password** and discovers watches already paired to that account.
 
-**Status:** implemented and tested with a simulated encrypted server and real Home Assistant 2026.2.3 classes. Authentication and commands have **not yet been tested against your account or physical watch**. The app contains code for multiple watch models; returned settings and firmware determine which features work on your Junior 2.
+**Status:** live email/password login, paired-watch discovery, cached settings and online-status reads passed on 2026-09-14. The live data instantiated 44 entities using real Home Assistant 2026.2.3 classes. Fresh location and firmware requests also passed, and the owner confirmed Find watch rang. Setting changes and other commands still need verification. The app contains code for multiple watch models; returned settings and firmware determine which features work on your Junior 2.
 
 ## Install
 
 If you cloned this repository, run `python scripts/package_release.py` first to generate the installable ZIP. This packaging step needs only Python's standard library. Alternatively, copy the integration folder directly as described in step 2.
 
-1. Extract `dist/noise_explorer-0.1.0.zip`.
+1. Extract `dist/noise_explorer-0.1.1.zip`.
 2. Copy `custom_components/noise_explorer` into your Home Assistant configuration directory, so it contains `/config/custom_components/noise_explorer/manifest.json`.
 3. Restart Home Assistant.
 4. Open **Settings → Devices & services → Add integration → Noise Explorer**.
@@ -137,7 +137,8 @@ data:
 
 - The XAPK was decompiled locally and used as protocol evidence, not as executable instructions. Evidence and endpoints are in [docs/PROTOCOL.md](docs/PROTOCOL.md).
 - Automated tests cover encrypted framing, login, discovery, settings, failure handling, reconnects, parsing, alarm validation, real HA entity classes, multi-watch behavior, and diagnostics redaction.
-- Tests use synthetic responses. Live account login, concurrent use with the phone app, Junior 2 setting support, and physical command execution remain unverified.
+- Automated tests use synthetic responses. Live login, cloud reads, fresh location and firmware requests also passed; the owner confirmed Find watch rang. Concurrent app sessions and setting changes remain unverified.
+- On the tested firmware, Find watch rang without returning a reply, so the action can time out despite physical execution. Step and signal refresh requests did not reply within the 35-second live test window; their cached readings remain available. Do not automatically retry a timed-out command.
 - The app handles server session replacement. If HA is kicked out, it requests reauthentication instead of repeatedly logging in and kicking the app out. A separately invited family account may help, but concurrent-session behavior has not been tested.
 - This is a **cloud integration**, not a local Bluetooth connection. It needs internet access to Noise's server on TLS port 8555, and the watch needs its normal network service.
 - Heart rate, blood oxygen, sleep-health reports, geofence editing, contacts editing, text/audio messaging, photos, remote recording, and live video are not implemented. Their presence in shared app code does not establish Junior 2 support, and several require separate HTTP/media protocols. No fake sensors or arbitrary raw-command service are supplied for them.
