@@ -6,6 +6,8 @@ An **experimental custom integration for the Noise Explorer Junior 2**, reverse 
 
 ## Install
 
+If you cloned this repository, run `python scripts/package_release.py` first to generate the installable ZIP. This packaging step needs only Python's standard library. Alternatively, copy the integration folder directly as described in step 2.
+
 1. Extract `dist/noise_explorer-0.1.0.zip`.
 2. Copy `custom_components/noise_explorer` into your Home Assistant configuration directory, so it contains `/config/custom_components/noise_explorer/manifest.json`.
 3. Restart Home Assistant.
@@ -160,4 +162,4 @@ python scripts/probe.py
 
 It prompts for credentials locally, hides the password, and prints only watch counts and returned field names. It does not ring, locate, or change the watch. Read [docs/LIVE_TEST.md](docs/LIVE_TEST.md) for the physical verification steps.
 
-Rebuild UI metadata with `python scripts/build_metadata.py` and the ZIP with `python scripts/package_release.py`. The manifest's documentation link currently points to HA's custom-integration structure guide; this local README is the project documentation until a public repository exists.
+Rebuild UI metadata with `python scripts/build_metadata.py` and the ZIP with `python scripts/package_release.py`. Project documentation is maintained in [this repository](https://github.com/andeshc/NoiseExplorerHubIntegration).
