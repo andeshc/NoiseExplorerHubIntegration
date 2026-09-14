@@ -13,13 +13,14 @@ The large ABI split contains native/media components. This implementation uses t
 
 ## Evidence map
 
-Paths below are relative to `analysis/decompiled/sources`. Line numbers refer to the local JADX output.
+Paths below are relative to the local, untracked `analysis/decompiled/sources` directory. They are evidence references, not links to files distributed in this repository. Line numbers refer to the local JADX output.
 
 | Behavior | App evidence |
 |---|---|
 | Noise-specific India endpoint and `HI` region | `com/xiaoxun/xun/region/AppRegionModel.java:49`, `LOCAL_WATCH_LIST` |
 | `wss://host/svc/pipe` | `com/xiaoxun/xun/services/NetService.java:2685` |
 | Email/password login payload | `com/xiaoxun/xun/activitys/NewLoginActivity.java:1973`, `sendEmailLogin` |
+| Required `Version="00140000"` on outgoing requests | `NetService.java:6545`, `sendNetMsg`; `CloudBridgeUtil.SW_PROTOCOL_NUM` |
 | Uppercase, zero-padded MD5 | `com/xiaoxun/xun/utils/StrUtil.java:183`, `getMD5` |
 | `region=global` | `com/xiaoxun/xun/utils/XimalayaUtil.java:26` |
 | Login time zone `UTC+05:30` style | `com/xiaoxun/xunoversea/utils/Utils.java:51` |

@@ -15,7 +15,9 @@ If you cloned this repository, run `python scripts/package_release.py` first to 
 5. Enter the same email and password as Noise Explorer Hub. Do not paste credentials into a chat or issue report.
 6. Open the discovered watch device. Press **Request location** to obtain a fresh position.
 
-Use Home Assistant 2026.2.3 or later. This is a manually installed integration, not a HACS-listed repository. The ZIP includes all integration files; it does not include the original APK, decompiled app, or analysis tools.
+Tested with Home Assistant 2026.2.3. Other versions have not been verified. This is a manually installed integration, not a HACS-listed repository. The ZIP includes all integration files; it does not include the original APK, decompiled app, or analysis tools.
+
+To update an existing installation, replace `custom_components/noise_explorer` with the folder from the new ZIP and restart Home Assistant. Version 0.1.1 fixes the missing protocol-version field that caused valid credentials to be rejected in 0.1.0.
 
 ## Entities
 
@@ -112,7 +114,7 @@ data:
   enabled: true
 ```
 
-To replace the complete list, pass up to ten objects with `hour`, `min`, `days`, `onoff`, `timeid`, and `bell`. Preserve existing IDs and bell values when editing. Each new `timeid` must be a unique 17-digit `yyyyMMddHHmmssSSS` timestamp. Use a bell value known to work on your watch.
+To replace the complete list, pass up to ten objects with `hour`, `min`, `days`, `onoff`, `timeid`, and `bell`. Preserve existing IDs and bell values when editing. Each new `timeid` must be a unique 17-digit `yyyyMMddHHmmssSSS` timestamp. The IDs below are synthetic examples; replace them with the IDs read from the watch or a new timestamp as appropriate. Use a bell value known to work on your watch.
 
 ```yaml
 action: noise_explorer.set_alarms
@@ -146,6 +148,8 @@ data:
 
 ## Development and live verification
 
+The recorded test environment uses Python 3.14. Run these commands from the repository root:
+
 ```text
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements-dev.txt
@@ -158,9 +162,9 @@ The commands above are for Windows. On Linux replace `.venv\Scripts\python.exe` 
 An optional interactive probe performs login, discovery, and cached reads only:
 
 ```text
-python scripts/probe.py
+.venv\Scripts\python.exe scripts/probe.py
 ```
 
-It prompts for credentials locally, hides the password, and prints only watch counts and returned field names. It does not ring, locate, or change the watch. Read [docs/LIVE_TEST.md](docs/LIVE_TEST.md) for the physical verification steps.
+On Linux, use `.venv/bin/python scripts/probe.py`. It prompts for credentials locally, hides the password, and prints only watch counts and returned field names. It does not ring, locate, or change watch settings, but signing in may replace the phone app's session. Read the [validation record](docs/VALIDATION.md) for completed checks and the [watch test checklist](docs/LIVE_TEST.md) for checks to repeat on an installation.
 
-Rebuild UI metadata with `python scripts/build_metadata.py` and the ZIP with `python scripts/package_release.py`. Project documentation is maintained in [this repository](https://github.com/andeshc/NoiseExplorerHubIntegration).
+Use the virtual environment's Python to run `scripts/build_metadata.py` when rebuilding UI metadata. Package the ZIP with `python scripts/package_release.py`; this script needs only the standard library. Project documentation is maintained in [this repository](https://github.com/andeshc/NoiseExplorerHubIntegration).
